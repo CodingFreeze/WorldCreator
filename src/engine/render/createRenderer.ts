@@ -1,10 +1,10 @@
 import * as THREE from "three";
 
 /** Locked render settings: ACES filmic, sRGB output, soft shadows. */
-export function createRenderer(canvas: HTMLCanvasElement): THREE.WebGLRenderer {
+export function createRenderer(canvas: HTMLCanvasElement, exposure = 1.1): THREE.WebGLRenderer {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = exposure;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;

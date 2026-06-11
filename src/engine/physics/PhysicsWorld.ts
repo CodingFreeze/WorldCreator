@@ -29,6 +29,13 @@ export class PhysicsWorld {
     this.world.step();
   }
 
+  /** Remove a static collider and its body (doors, destroyed props). */
+  removeCollider(collider: RAPIER.Collider): void {
+    const body = collider.parent();
+    this.world.removeCollider(collider, true);
+    if (body) this.world.removeRigidBody(body);
+  }
+
   /** Static box collider; halfExtents are half side lengths. Optional yaw. */
   addFixedCuboid(pos: Vec3, halfExtents: Vec3, yRot = 0): RAPIER.Collider {
     const desc = RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z);

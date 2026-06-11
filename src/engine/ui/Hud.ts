@@ -77,14 +77,14 @@ export class Hud {
 
   private coinsEl: HTMLDivElement | null = null;
 
-  setCoins(n: number): void {
+  setCoins(n: number, label = "Coins"): void {
     if (!this.coinsEl) {
       this.coinsEl = document.createElement("div");
       this.coinsEl.style.cssText =
         "position:absolute;right:18px;top:14px;background:rgba(24,18,12,0.75);border:1px solid #c9a25e;border-radius:6px;padding:6px 12px;color:#e8c478;font-family:Georgia,serif;font-size:15px;z-index:9;pointer-events:none";
       this.promptEl.parentElement?.appendChild(this.coinsEl);
     }
-    this.coinsEl.textContent = `Coins: ${n}`;
+    this.coinsEl.textContent = `${label}: ${n}`;
   }
 
   setPrompt(text: string | null): void {

@@ -29,7 +29,10 @@ export const WORLDS: WorldEntry[] = [
     tagline: "Rain, noodles, and secrets in the alley behind the holograms.",
     accent: "#ff2a6a",
     poster: nightMarketPoster,
-    load: null, // lands in P6
+    load: async () => {
+      const m = await import("@worlds/nightmarket/main");
+      return { boot: m.bootNightMarket };
+    },
   },
   {
     id: "windward",
