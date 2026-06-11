@@ -17,11 +17,14 @@ import { PlayerCombat } from "@engine/combat/PlayerCombat";
 import { Projectiles, type HitTarget } from "@engine/combat/Projectiles";
 import { DialoguePanel } from "@engine/ui/DialoguePanel";
 import { Hud } from "@engine/ui/Hud";
+import { QuestLog } from "@engine/quest/QuestLog";
+import { SaveSystem, type SaveData } from "@engine/save/SaveSystem";
 import { buildVillage, updateWindows } from "./buildWorld";
 import { ChickenFlock } from "./chickens";
 import { defineRoster } from "./npcs";
 import { VillageNpcs } from "./npcRuntime";
 import { EnemyHost } from "./enemies";
+import { questDialogueFor, tryCollectMoss, MOSS_POSITION, type QuestServices } from "./quest";
 
 const BINDINGS = {
   forward: ["KeyW"],
@@ -34,6 +37,7 @@ const BINDINGS = {
   melee: ["Mouse0"],
   bow: ["Mouse2"],
   bolt: ["KeyQ"],
+  save: ["KeyK"],
 } as const;
 
 export const WORLD_SEED = 1031;
@@ -49,7 +53,12 @@ export async function bootHollowmere(container: HTMLElement): Promise<void> {
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 400);
   bindResize(renderer, camera);
 
-  const clock = new GameClock({ dayLengthSec: 480, startHour: 10 });
+  const saves = new SaveSystem();
+  const saved = new URLSearchParams(location.search).has("fresh")
+    ? null
+    : saves.load("hollowmere");
+
+  const clock = new GameClock({ dayLengthSec: 480, startHour: saved?.clockHours ?? 10 });
   const rig = new GoldenHourRig(scene);
 
   const physics = await PhysicsWorld.create();
@@ -80,6 +89,59 @@ export async function bootHollowmere(container: HTMLElement): Promise<void> {
   const enemies = new EnemyHost(scene, projectiles, bursts, WORLD_SEED ^ 0xbad);
   const playerHealth = new Health(10);
   const combat = new PlayerCombat();
+
+  // --- Quest: The Crabapple Remedy. ---
+  const questLog = new QuestLog();
+  let coins = 0;
+  const moss = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.35, 0),
+    new THREE.MeshBasicMaterial({ color: "#5aff8a" }),
+  );
+  moss.position.set(MOSS_POSITION.x, 0.3, MOSS_POSITION.z);
+  moss.visible = false;
+  scene.add(moss);
+
+  const questServices: QuestServices = {
+    log: questLog,
+    bus,
+    nowHours: () => clock.totalHoursElapsed,
+    playerPos: () => char.position,
+    addCoins: (n) => {
+      coins += n;
+      hud.setCoins(coins);
+    },
+    toast: (msg) => hud.toast(msg),
+    closeDialogue: () => dialogue.hide(),
+  };
+
+  // --- Restore save, if any. ---
+  if (saved) {
+    char.setPosition({ x: saved.player.x, y: saved.player.y, z: saved.player.z });
+    playerHealth.current = saved.player.health;
+    coins = saved.player.coins;
+    questLog.restore(saved.quests);
+    for (const e of npcs.entities) {
+      const snap = saved.minds[e.def.id];
+      if (snap) e.mind.restore(snap);
+    }
+  }
+  hud.setCoins(coins);
+
+  const buildSave = (): SaveData => {
+    const p = char.position;
+    const minds: SaveData["minds"] = {};
+    for (const e of npcs.entities) minds[e.def.id] = e.mind.serialize();
+    return {
+      version: 1,
+      worldId: "hollowmere",
+      clockHours: clock.totalHoursElapsed,
+      player: { x: p.x, y: p.y, z: p.z, health: playerHealth.current, coins },
+      quests: questLog.serialize(),
+      minds,
+      flags: {},
+    };
+  };
+  let autosaveTimer = 30;
 
   const input = new ActionMap(BINDINGS);
   bindDomInput(input, canvas);
@@ -188,17 +250,34 @@ export async function bootHollowmere(container: HTMLElement): Promise<void> {
         hud.toast("You wake by the well, aching and embarrassed.");
       }
 
-      // E: talk to the nearest villager.
+      // E: collect quest items, else talk to the nearest villager.
       if (input.consumePressed("interact")) {
-        const nearby = npcs.nearestTo(playerPos);
-        if (nearby) {
-          dialogue.show(
-            `${nearby.def.name} — ${nearby.def.role}`,
-            npcs.greetingFor(nearby, lineRng),
-          );
-        } else if (dialogue.visible) {
-          dialogue.hide();
+        if (tryCollectMoss(questServices, playerPos)) {
+          moss.visible = false;
+        } else {
+          const nearby = npcs.nearestTo(playerPos);
+          if (nearby) {
+            const quest = questDialogueFor(nearby.def.id, questServices);
+            if (quest) {
+              dialogue.show(`${nearby.def.name} — ${nearby.def.role}`, quest.line, quest.choices);
+            } else {
+              dialogue.show(
+                `${nearby.def.name} — ${nearby.def.role}`,
+                npcs.greetingFor(nearby, lineRng),
+              );
+            }
+          } else if (dialogue.visible) {
+            dialogue.hide();
+          }
         }
+      }
+
+      // Saving: manual (K) + autosave every 30s.
+      autosaveTimer -= step;
+      if (input.consumePressed("save") || autosaveTimer <= 0) {
+        if (autosaveTimer > 0) hud.toast("Game saved.");
+        autosaveTimer = 30;
+        saves.save(buildSave());
       }
 
       // F: kick a chicken. The village remembers.
@@ -227,12 +306,60 @@ export async function bootHollowmere(container: HTMLElement): Promise<void> {
       rig.update(clock, player.group.position);
       updateWindows(village.windows, clock.daylight01);
 
+      // Glowmoss shimmer while the fetch is on.
+      moss.visible = questLog.isAt("remedy", "fetch");
+      if (moss.visible) {
+        moss.rotation.y += dt * 1.5;
+        moss.position.y = 0.35 + Math.sin(walkPhase * 0.3 + clock.totalHoursElapsed * 4) * 0.08;
+      }
+
       const nearby = npcs.nearestTo(p);
-      hud.setPrompt(dialogue.visible ? null : nearby ? `E — talk to ${nearby.def.name}` : null);
+      const nearMoss =
+        moss.visible && Math.hypot(p.x - MOSS_POSITION.x, p.z - MOSS_POSITION.z) < 2.2;
+      hud.setPrompt(
+        dialogue.visible
+          ? null
+          : nearMoss
+            ? "E — gather the glowmoss"
+            : nearby
+              ? `E — talk to ${nearby.def.name}`
+              : null,
+      );
       hud.setBars(playerHealth.fraction, combat.flowFraction);
 
       renderer.render(scene, camera);
     },
   });
   loop.start();
+
+  // E2E/dev hooks — only with ?dev=1. Lets tests teleport and inspect state.
+  if (new URLSearchParams(location.search).has("dev")) {
+    (window as unknown as Record<string, unknown>).__wc = {
+      teleport: (x: number, z: number) => char.setPosition({ x, y: 1.5, z }),
+      playerPos: () => char.position,
+      questStage: () => questLog.stageOf("remedy"),
+      coins: () => coins,
+      npcPositions: () =>
+        Object.fromEntries(
+          npcs.entities.map((e) => [
+            e.def.id,
+            { x: e.parts.group.position.x, z: e.parts.group.position.z },
+          ]),
+        ),
+      attitudes: () =>
+        Object.fromEntries(npcs.entities.map((e) => [e.def.id, e.mind.attitude])),
+      mindStats: () =>
+        Object.fromEntries(
+          npcs.entities.map((e) => [
+            e.def.id,
+            { morality: e.mind.morality, memories: e.mind.memories.size },
+          ]),
+        ),
+      chickenPositions: () => chickens.positions(),
+      pressKey: (code: string) => {
+        window.dispatchEvent(new KeyboardEvent("keydown", { code }));
+        window.dispatchEvent(new KeyboardEvent("keyup", { code }));
+      },
+    };
+  }
 }

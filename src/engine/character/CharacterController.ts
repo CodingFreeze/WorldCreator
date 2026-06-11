@@ -43,6 +43,11 @@ export class CharacterController {
    * @param jump true on the frame jump was pressed
    */
   update(move: { x: number; z: number }, jump: boolean, dtSec: number): void {
+    if (this.pendingTeleport) {
+      this.body.setNextKinematicTranslation(this.pendingTeleport);
+      this.pendingTeleport = null;
+      return;
+    }
     if (this.grounded && jump) {
       this.verticalVel = this.tuning.jumpSpeed;
     }
@@ -72,9 +77,15 @@ export class CharacterController {
     if (this.grounded && this.verticalVel < 0) this.verticalVel = 0;
   }
 
-  /** Teleport (save/load, world entry). Resets falling velocity. */
+  private pendingTeleport: Vec3 | null = null;
+
+  /**
+   * Teleport (save/load, world entry). Applied at the next update — a direct
+   * setNextKinematicTranslation here would be overwritten by the movement
+   * solve that runs in the same fixed step.
+   */
   setPosition(pos: Vec3): void {
-    this.body.setNextKinematicTranslation(pos);
+    this.pendingTeleport = { ...pos };
     this.verticalVel = 0;
   }
 

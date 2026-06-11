@@ -71,4 +71,28 @@ export class NpcMind {
     if (this.memories.size === 0) return false;
     return [...this.memories.values()].every((m) => m.secondhand);
   }
+
+  serialize(): MindSnapshot {
+    return {
+      morality: this.morality,
+      fear: this.fear,
+      affection: this.affection,
+      memories: [...this.memories.values()],
+    };
+  }
+
+  restore(snapshot: MindSnapshot): void {
+    this.morality = snapshot.morality;
+    this.fear = snapshot.fear;
+    this.affection = snapshot.affection;
+    this.memories.clear();
+    for (const m of snapshot.memories) this.memories.set(m.event.id, m);
+  }
+}
+
+export interface MindSnapshot {
+  morality: number;
+  fear: number;
+  affection: number;
+  memories: Memory[];
 }

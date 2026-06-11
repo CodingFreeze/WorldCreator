@@ -43,6 +43,14 @@ export class ChickenFlock {
     }
   }
 
+  /** Current positions (dev/e2e). */
+  positions(): { x: number; z: number }[] {
+    return this.chickens.map((c) => ({
+      x: c.parts.group.position.x,
+      z: c.parts.group.position.z,
+    }));
+  }
+
   /**
    * Boot the nearest chicken within reach: it bolts, you answer to the
    * village. Returns the chicken's position or null if none in range.

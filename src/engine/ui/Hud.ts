@@ -75,6 +75,18 @@ export class Hud {
     if (this.flowFill) this.flowFill.style.width = `${Math.max(0, flow01) * 100}%`;
   }
 
+  private coinsEl: HTMLDivElement | null = null;
+
+  setCoins(n: number): void {
+    if (!this.coinsEl) {
+      this.coinsEl = document.createElement("div");
+      this.coinsEl.style.cssText =
+        "position:absolute;right:18px;top:14px;background:rgba(24,18,12,0.75);border:1px solid #c9a25e;border-radius:6px;padding:6px 12px;color:#e8c478;font-family:Georgia,serif;font-size:15px;z-index:9;pointer-events:none";
+      this.promptEl.parentElement?.appendChild(this.coinsEl);
+    }
+    this.coinsEl.textContent = `Coins: ${n}`;
+  }
+
   setPrompt(text: string | null): void {
     if (text) {
       this.promptEl.textContent = text;
