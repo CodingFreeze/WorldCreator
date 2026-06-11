@@ -7,6 +7,7 @@ import type { PlayerAvatar } from "@engine/character/PlayerAvatar";
 import type { Vec3 } from "@engine/physics/PhysicsWorld";
 import type { WorldEventType } from "@engine/npc/events";
 import type { Hud } from "@engine/ui/Hud";
+import type { SfxBus } from "@engine/audio/SfxBus";
 import type { EnemyHost } from "./enemies";
 import type { VillageNpcs } from "./npcRuntime";
 
@@ -24,6 +25,7 @@ export interface CombatLoopDeps {
   hud: Hud;
   dialogueVisible: () => boolean;
   emit: (type: WorldEventType, x: number, z: number, targetId?: string) => void;
+  sfx: SfxBus;
 }
 
 /**
@@ -43,6 +45,7 @@ export function combatFixedStep(
     if (atk) {
       d.avatar.strike();
       d.avatar.facing = aimFacing;
+      d.sfx.play("hit");
       for (const enemy of d.enemies.inMeleeArc(playerPos, aimFacing)) {
         const result = d.enemies.damage(enemy.id, Math.round(1 * atk.damageMult));
         if (result === "killed") {
@@ -61,6 +64,7 @@ export function combatFixedStep(
     const atk = d.combat.tryBow();
     if (atk) {
       d.avatar.strike(0.18);
+      d.sfx.play("click");
       d.projectiles.spawn({
         x: playerPos.x, y: 1.3, z: playerPos.z,
         dirX: fwd.x, dirZ: fwd.z,
@@ -75,6 +79,7 @@ export function combatFixedStep(
     const atk = d.combat.tryBolt();
     if (atk) {
       d.avatar.strike(0.3);
+      d.sfx.play("magic");
       d.bursts.spawn(playerPos.x, 1.4, playerPos.z, "#8a5ae8", 10, 2);
       d.projectiles.spawn({
         x: playerPos.x, y: 1.3, z: playerPos.z,

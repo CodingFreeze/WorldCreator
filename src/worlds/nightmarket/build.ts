@@ -60,6 +60,14 @@ export interface BuiltMarket {
   stashPos: { x: number; z: number };
 }
 
+export const VENDOR_LINES = [
+  "WELCOME TO LUCKY NOODLE. BROTH IS 98.2% AUTHENTIC. THE REST IS LOVE. AND SOLVENT.",
+  "RAIN AGAIN. GOOD FOR BUSINESS. BAD FOR MY JOINTS. I AM 70% JOINTS.",
+  "THE DRONE? IGNORE IT. IT ONLY REPORTS CRIMES IT SEES. PHILOSOPHICALLY COMFORTING.",
+  "A CUSTOMER ONCE HACKED ALL THREE TERMINALS. THE BACKROOM REMEMBERS. SO DO I.",
+  "NO REFUNDS. TECHNICALLY NO PRICES EITHER. WE OPERATE ON VIBES AND CREDITS.",
+];
+
 /** NOODLE-9000: boxy vendor robot with unblinking cyan eyes. */
 export function createVendorBot(): THREE.Group {
   const vendor = new THREE.Group();
@@ -100,7 +108,7 @@ export function buildMarket(
   scene.add(
     createGroundPatch({
       size: 110,
-      segments: 60,
+      segments: 110,
       seed: layout.seed,
       amplitude: 0.05,
       colorA: ASPHALT_LOW,

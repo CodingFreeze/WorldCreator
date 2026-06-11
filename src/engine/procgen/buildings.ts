@@ -68,7 +68,7 @@ export function createCottage(rng: Rng): CottageResult {
   const doorBody = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.3, 0.08), doorMat);
   doorBody.position.y = 0.65;
   const doorArch = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.35, 0.35, 0.08, 12, 1, false, 0, Math.PI),
+    new THREE.CylinderGeometry(0.35, 0.35, 0.08, 18, 1, false, 0, Math.PI),
     doorMat,
   );
   doorArch.rotation.x = Math.PI / 2;
@@ -102,7 +102,7 @@ export function createWell(rng: Rng): { group: THREE.Group; radius: number } {
   const stone = new THREE.MeshLambertMaterial({
     map: plasterTexture(rng.int(0, 1e9), "#9a958a", "#6a655a"),
   });
-  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.9, 0.7, 10), stone);
+  const ring = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.9, 0.7, 16), stone);
   ring.position.y = 0.35;
   ring.castShadow = true;
   ring.receiveShadow = true;

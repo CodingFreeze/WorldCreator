@@ -1,14 +1,23 @@
 import type { ActionMap } from "./ActionMap";
 
-/** Wires DOM events into an ActionMap. Returns an unbind function. */
-export function bindDomInput(map: ActionMap, canvas: HTMLCanvasElement): () => void {
+/**
+ * Wires DOM events into an ActionMap. Returns an unbind function.
+ * canLock vetoes pointer-lock grabs (e.g. while a dialogue or menu is open).
+ */
+export function bindDomInput(
+  map: ActionMap,
+  canvas: HTMLCanvasElement,
+  canLock?: () => boolean,
+): () => void {
   const onKeyDown = (e: KeyboardEvent) => {
     if (e.repeat) return;
     map.setKey(e.code, true);
   };
   const onKeyUp = (e: KeyboardEvent) => map.setKey(e.code, false);
   const onMouseDown = (e: MouseEvent) => {
-    if (document.pointerLockElement !== canvas) canvas.requestPointerLock();
+    if (document.pointerLockElement !== canvas && (canLock?.() ?? true)) {
+      canvas.requestPointerLock();
+    }
     map.setKey(`Mouse${e.button}`, true);
   };
   const onMouseUp = (e: MouseEvent) => map.setKey(`Mouse${e.button}`, false);

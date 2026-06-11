@@ -45,13 +45,33 @@ export class DialoguePanel {
     container.appendChild(this.root);
   }
 
+  private currentChoices: DialogueChoice[] = [];
+  private keyHandler: ((e: KeyboardEvent) => void) | null = null;
+
   show(speaker: string, line: string, choices: DialogueChoice[] = []): void {
     this.nameEl.textContent = speaker;
     this.lineEl.textContent = line;
     this.choicesEl.replaceChildren();
-    for (const choice of choices) {
+    this.currentChoices = choices;
+
+    if (choices.length > 0) {
+      // Choices need a cursor: release pointer lock so buttons are clickable.
+      document.exitPointerLock();
+      if (!this.keyHandler) {
+        this.keyHandler = (e: KeyboardEvent) => {
+          if (!this.visible) return;
+          const idx = ["Digit1", "Digit2", "Digit3", "Digit4"].indexOf(e.code);
+          if (idx >= 0 && idx < this.currentChoices.length) {
+            this.currentChoices[idx]?.onPick();
+          }
+        };
+        window.addEventListener("keydown", this.keyHandler);
+      }
+    }
+
+    choices.forEach((choice, i) => {
       const btn = document.createElement("button");
-      btn.textContent = choice.label;
+      btn.textContent = `${i + 1})  ${choice.label}`;
       btn.style.cssText = [
         "background:#3a2d1d",
         "color:#f2e8d8",
@@ -67,7 +87,7 @@ export class DialoguePanel {
       btn.onmouseleave = () => (btn.style.background = "#3a2d1d");
       btn.onclick = () => choice.onPick();
       this.choicesEl.appendChild(btn);
-    }
+    });
     this.root.style.display = "block";
     this.visible = true;
   }
@@ -75,5 +95,6 @@ export class DialoguePanel {
   hide(): void {
     this.root.style.display = "none";
     this.visible = false;
+    this.currentChoices = [];
   }
 }

@@ -10,6 +10,7 @@ import { CharacterController } from "@engine/character/CharacterController";
 import { ThirdPersonCamera } from "@engine/character/ThirdPersonCamera";
 import { createHumanoid, animateHumanoid } from "@engine/procgen/humanoid";
 import { Hud } from "@engine/ui/Hud";
+import { installWorldChrome } from "@engine/ui/WorldChrome";
 import type { WorldHandle } from "@engine/core/World";
 import { buildIsland, Ocean } from "./island";
 import { createPalm, createRuins, createShrine, createChest, createRelic } from "./props";
@@ -118,13 +119,15 @@ export async function bootWindward(container: HTMLElement): Promise<WorldHandle>
   hud.toast("Three relics are scattered across the isle. The shrine waits.");
 
   const input = new ActionMap(BINDINGS);
-  const unbindInput = bindDomInput(input, canvas);
   const tpCamera = new ThirdPersonCamera(camera);
   tpCamera.yaw = Math.atan2(30, 20); // look inland at boot
+  const chrome = installWorldChrome(container, renderer, tpCamera, 1.15);
+  const unbindInput = bindDomInput(input, canvas, () => !chrome.menu.visible);
   let elapsed = 0;
 
   const loop = new FixedStepLoop({
     fixedUpdate: (step) => {
+      if (chrome.menu.visible) return; // paused in settings
       elapsed += step;
       const fwd = tpCamera.forwardDir();
       const move = { x: 0, z: 0 };
@@ -151,6 +154,7 @@ export async function bootWindward(container: HTMLElement): Promise<WorldHandle>
           r.taken = true;
           r.mesh.visible = false;
           relicsFound++;
+          chrome.sfx.play("pickup");
           bursts.spawn(r.x, r.baseY, r.z, "#ffd23a", 16, 3);
           hud.toast(
             relicsFound === 3
@@ -168,6 +172,7 @@ export async function bootWindward(container: HTMLElement): Promise<WorldHandle>
             chest.opened = true;
             pearls += 10;
             hud.setCoins(pearls, "Pearls");
+            chrome.sfx.play("success");
             bursts.spawn(chest.x, chest.group.position.y + 0.8, chest.z, "#e8f0ff", 14, 2.5);
             hud.toast("A chest of pearls! (+10)");
           }
@@ -185,6 +190,7 @@ export async function bootWindward(container: HTMLElement): Promise<WorldHandle>
         (shrine.orb.material as THREE.MeshBasicMaterial).toneMapped = false;
         pearls += 30;
         hud.setCoins(pearls, "Pearls");
+        chrome.sfx.play("magic");
         bursts.spawn(0, peakH + 2, 0, "#aef0ff", 30, 5);
         hud.toast("The shrine wakes. Light pours into the sky. (+30 pearls)");
       }
@@ -241,6 +247,7 @@ export async function bootWindward(container: HTMLElement): Promise<WorldHandle>
       loop.stop();
       unbindInput();
       unbindResize();
+      chrome.dispose();
       renderer.dispose();
       container.replaceChildren();
     },

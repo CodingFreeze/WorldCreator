@@ -35,7 +35,7 @@ export interface BuiltIsland {
 /** Island terrain mesh + matching trimesh collider. */
 export function buildIsland(scene: THREE.Scene, physics: PhysicsWorld, seed: number): BuiltIsland {
   const size = 160;
-  const segments = 96;
+  const segments = 150;
   const geo = new THREE.PlaneGeometry(size, size, segments, segments);
   geo.rotateX(-Math.PI / 2);
   const pos = geo.attributes.position;
@@ -77,7 +77,7 @@ export class Ocean {
   private readonly mesh: THREE.Mesh;
 
   constructor(scene: THREE.Scene) {
-    const geo = new THREE.PlaneGeometry(400, 400, 48, 48);
+    const geo = new THREE.PlaneGeometry(400, 400, 72, 72);
     geo.rotateX(-Math.PI / 2);
     this.mesh = new THREE.Mesh(
       geo,

@@ -13,18 +13,18 @@ function lambert(color: string): THREE.MeshLambertMaterial {
 export function createChicken(): ChickenParts {
   const group = new THREE.Group();
 
-  const body = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), lambert("#f2ede2"));
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 9), lambert("#f2ede2"));
   body.position.y = 0.18;
   body.scale.set(1, 0.9, 1.25);
   body.castShadow = true;
   group.add(body);
 
   const head = new THREE.Group();
-  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.09, 7, 6), lambert("#f2ede2"));
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.09, 11, 8), lambert("#f2ede2"));
   skull.castShadow = true;
   head.add(skull);
 
-  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.09, 5), lambert("#e8a33d"));
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.09, 8), lambert("#e8a33d"));
   beak.rotation.x = Math.PI / 2;
   beak.position.z = 0.1;
   head.add(beak);
@@ -36,7 +36,7 @@ export function createChicken(): ChickenParts {
   head.position.set(0, 0.38, 0.14);
   group.add(head);
 
-  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.16, 5), lambert("#e0d8c8"));
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.16, 8), lambert("#e0d8c8"));
   tail.rotation.x = -Math.PI / 3;
   tail.position.set(0, 0.26, -0.2);
   group.add(tail);

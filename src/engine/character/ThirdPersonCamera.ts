@@ -41,12 +41,14 @@ export class ThirdPersonCamera {
   pitch = 0.35;
   distance = 6;
   heightOffset = 1.5;
+  /** User-adjustable look-speed multiplier (settings menu). */
+  sensitivity = 1;
 
   constructor(readonly camera: THREE.PerspectiveCamera) {}
 
   addLook(dx: number, dy: number): void {
-    this.yaw -= dx * MOUSE_SENS;
-    this.pitch = clampPitch(this.pitch + dy * MOUSE_SENS);
+    this.yaw -= dx * MOUSE_SENS * this.sensitivity;
+    this.pitch = clampPitch(this.pitch + dy * MOUSE_SENS * this.sensitivity);
   }
 
   /** Direction the character should move for "forward" input (camera-relative). */

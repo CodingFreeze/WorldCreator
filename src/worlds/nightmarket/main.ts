@@ -9,9 +9,10 @@ import { ThirdPersonCamera } from "@engine/character/ThirdPersonCamera";
 import { createHumanoid, animateHumanoid } from "@engine/procgen/humanoid";
 import { DialoguePanel } from "@engine/ui/DialoguePanel";
 import { Hud } from "@engine/ui/Hud";
+import { installWorldChrome } from "@engine/ui/WorldChrome";
 import type { WorldHandle } from "@engine/core/World";
 import { generateMarketLayout } from "./layout";
-import { buildMarket, createVendorBot } from "./build";
+import { buildMarket, createVendorBot, VENDOR_LINES } from "./build";
 import { RainSystem, SteamColumns } from "./effects";
 import { DroneCore, droneSees, WAYPOINT_ARRIVE_DIST } from "./drone";
 import { installMarketDevHooks } from "./devHooks";
@@ -23,14 +24,6 @@ const BINDINGS = {
 
 const SEED = 2077;
 const HACK_TIME = 3;
-
-const VENDOR_LINES = [
-  "WELCOME TO LUCKY NOODLE. BROTH IS 98.2% AUTHENTIC. THE REST IS LOVE. AND SOLVENT.",
-  "RAIN AGAIN. GOOD FOR BUSINESS. BAD FOR MY JOINTS. I AM 70% JOINTS.",
-  "THE DRONE? IGNORE IT. IT ONLY REPORTS CRIMES IT SEES. PHILOSOPHICALLY COMFORTING.",
-  "A CUSTOMER ONCE HACKED ALL THREE TERMINALS. THE BACKROOM REMEMBERS. SO DO I.",
-  "NO REFUNDS. TECHNICALLY NO PRICES EITHER. WE OPERATE ON VIBES AND CREDITS.",
-];
 
 /** Boot the Neon Night Market: rain, neon, credits, hacking, one nosy drone. */
 export async function bootNightMarket(container: HTMLElement): Promise<WorldHandle> {
@@ -61,7 +54,7 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
   });
   scene.add(player.group);
   let walkPhase = 0;
-  let facing = 0;
+  let facing = Math.PI; // face up the street
 
   // Vendor robot.
   const vendor = createVendorBot();
@@ -83,12 +76,12 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
   // Drone.
   const drone = new THREE.Group();
   const droneBody = new THREE.Mesh(
-    new THREE.SphereGeometry(0.35, 8, 6),
+    new THREE.SphereGeometry(0.35, 12, 9),
     new THREE.MeshLambertMaterial({ color: "#2a2a3a", flatShading: true }),
   );
   const droneEyeMat = new THREE.MeshBasicMaterial({ color: "#ff3a3a" });
   droneEyeMat.toneMapped = false;
-  const droneEye = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 5), droneEyeMat);
+  const droneEye = new THREE.Mesh(new THREE.SphereGeometry(0.12, 9, 7), droneEyeMat);
   droneEye.position.z = 0.3;
   const droneLight = new THREE.SpotLight("#ff5a5a", 8, 14, 0.5, 0.4);
   droneLight.position.set(0, 0, 0.2);
@@ -118,14 +111,19 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
   hud.setCoins(0, "Credits");
 
   const input = new ActionMap(BINDINGS);
-  const unbindInput = bindDomInput(input, canvas);
   const tpCamera = new ThirdPersonCamera(camera);
   tpCamera.yaw = Math.PI; // face up the street into the neon
-  facing = Math.PI;
+  const chrome = installWorldChrome(container, renderer, tpCamera, 1.05);
+  const unbindInput = bindDomInput(
+    input,
+    canvas,
+    () => !dialogue.visible && !chrome.menu.visible,
+  );
   let elapsed = 0;
 
   const loop = new FixedStepLoop({
     fixedUpdate: (step) => {
+      if (chrome.menu.visible) return; // paused in settings
       elapsed += step;
       const fwd = tpCamera.forwardDir();
       const move = { x: 0, z: 0 };
@@ -157,6 +155,7 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
           chip.mesh.visible = false;
           credits += 5;
           hud.setCoins(credits, "Credits");
+          chrome.sfx.play("pickup");
         }
       }
 
@@ -167,6 +166,7 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
           hacked.add(hackingIdx);
           hackingIdx = -1;
           hackProgress = 0;
+          chrome.sfx.play("success");
           hud.toast(
             hacked.size === 3
               ? "All terminals breached. Somewhere, a door unlocks."
@@ -192,6 +192,7 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
           stash.visible = false;
           credits += 50;
           hud.setCoins(credits, "Credits");
+          chrome.sfx.play("success");
           hud.toast("The stash: 50 credits and a note — 'you didn't find this.'");
         } else if (dialogue.visible) {
           dialogue.hide();
@@ -218,6 +219,7 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
           const fine = Math.min(credits, 15);
           credits -= fine;
           hud.setCoins(credits, "Credits");
+          chrome.sfx.play("alarm");
           hud.toast(`DRONE ALARM. Fine issued: ${fine} credits. It is very smug about it.`);
           hackingIdx = -1;
           hackProgress = 0;
@@ -290,6 +292,7 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
       loop.stop();
       unbindInput();
       unbindResize();
+      chrome.dispose();
       renderer.dispose();
       container.replaceChildren();
     },

@@ -16,7 +16,7 @@ export function createTree(rng: Rng): TreeResult {
   const trunkR = rng.range(0.14, 0.26);
 
   const trunk = new THREE.Mesh(
-    new THREE.CylinderGeometry(trunkR * 0.8, trunkR * 1.2, trunkH, 7),
+    new THREE.CylinderGeometry(trunkR * 0.8, trunkR * 1.2, trunkH, 10),
     new THREE.MeshLambertMaterial({
       map: woodTexture(rng.int(0, 1e9), "#6a4e30", "#46331e"),
     }),
@@ -30,7 +30,7 @@ export function createTree(rng: Rng): TreeResult {
   for (let i = 0; i < blobs; i++) {
     const r = rng.range(0.8, 1.4);
     const blob = new THREE.Mesh(
-      new THREE.SphereGeometry(r, 7, 6),
+      new THREE.SphereGeometry(r, 12, 9),
       new THREE.MeshLambertMaterial({ color: rng.pick(CANOPY_GREENS), flatShading: true }),
     );
     blob.position.set(
@@ -48,7 +48,7 @@ export function createTree(rng: Rng): TreeResult {
 /** Low bush — single squashed blob. */
 export function createBush(rng: Rng): THREE.Mesh {
   const bush = new THREE.Mesh(
-    new THREE.SphereGeometry(rng.range(0.35, 0.6), 7, 5),
+    new THREE.SphereGeometry(rng.range(0.35, 0.6), 10, 7),
     new THREE.MeshLambertMaterial({ color: rng.pick(CANOPY_GREENS), flatShading: true }),
   );
   bush.scale.y = 0.7;

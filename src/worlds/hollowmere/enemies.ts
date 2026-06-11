@@ -30,12 +30,12 @@ function lambert(color: string): THREE.MeshLambertMaterial {
 /** Spiky briar imp — melee mob of the north woods. */
 function thornlingMesh(): THREE.Group {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 0), lambert("#2f4a22"));
+  const body = new THREE.Mesh(new THREE.IcosahedronGeometry(0.42, 1), lambert("#2f4a22"));
   body.position.y = 0.5;
   body.castShadow = true;
   g.add(body);
   for (let i = 0; i < 7; i++) {
-    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.32, 4), lambert("#1d3015"));
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.32, 6), lambert("#1d3015"));
     const a = (i / 7) * Math.PI * 2;
     spike.position.set(Math.cos(a) * 0.38, 0.5 + Math.sin(i * 2.1) * 0.2, Math.sin(a) * 0.38);
     spike.lookAt(spike.position.x * 2, spike.position.y, spike.position.z * 2);
@@ -43,7 +43,7 @@ function thornlingMesh(): THREE.Group {
     g.add(spike);
   }
   const eyeL = new THREE.Mesh(
-    new THREE.SphereGeometry(0.05, 5, 5),
+    new THREE.SphereGeometry(0.05, 8, 7),
     new THREE.MeshBasicMaterial({ color: "#ffd23a" }),
   );
   eyeL.position.set(-0.12, 0.58, 0.36);
@@ -57,13 +57,13 @@ function thornlingMesh(): THREE.Group {
 function emberwispMesh(): THREE.Group {
   const g = new THREE.Group();
   const core = new THREE.Mesh(
-    new THREE.SphereGeometry(0.3, 8, 6),
+    new THREE.SphereGeometry(0.3, 12, 9),
     new THREE.MeshBasicMaterial({ color: "#ff8c3a" }),
   );
   core.position.y = 1.4;
   g.add(core);
   const shell = new THREE.Mesh(
-    new THREE.IcosahedronGeometry(0.42, 0),
+    new THREE.IcosahedronGeometry(0.42, 1),
     new THREE.MeshLambertMaterial({
       color: "#7a3a1a",
       flatShading: true,

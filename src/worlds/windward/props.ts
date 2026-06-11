@@ -14,7 +14,7 @@ export function createPalm(rng: Rng): THREE.Group {
   let xOff = 0;
   for (let i = 0; i < segs; i++) {
     const seg = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.12 - i * 0.015, 0.15 - i * 0.015, 1.1, 6),
+      new THREE.CylinderGeometry(0.12 - i * 0.015, 0.15 - i * 0.015, 1.1, 9),
       lambert("#8a6a4a"),
     );
     xOff += lean * 0.9;
@@ -26,7 +26,7 @@ export function createPalm(rng: Rng): THREE.Group {
   }
   const crownY = y + 0.2;
   for (let i = 0; i < 6; i++) {
-    const frond = new THREE.Mesh(new THREE.ConeGeometry(0.22, 2.0, 4), lambert("#4a9a4a"));
+    const frond = new THREE.Mesh(new THREE.ConeGeometry(0.22, 2.0, 7), lambert("#4a9a4a"));
     const a = (i / 6) * Math.PI * 2;
     frond.position.set(xOff + Math.cos(a) * 0.8, crownY, Math.sin(a) * 0.8);
     frond.rotation.z = Math.cos(a) * 1.25;
@@ -34,7 +34,7 @@ export function createPalm(rng: Rng): THREE.Group {
     frond.castShadow = true;
     g.add(frond);
   }
-  const coconut = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 5), lambert("#6a4a2a"));
+  const coconut = new THREE.Mesh(new THREE.SphereGeometry(0.12, 9, 7), lambert("#6a4a2a"));
   coconut.position.set(xOff, crownY - 0.2, 0.2);
   g.add(coconut);
   return g;
@@ -47,7 +47,7 @@ export function createRuins(rng: Rng): THREE.Group {
   for (let i = 0; i < 5; i++) {
     const a = (i / 5) * Math.PI * 2;
     const h = rng.range(1.2, 3.2);
-    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, h, 7), stone);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, h, 11), stone);
     const x = Math.cos(a) * 3;
     const z = Math.sin(a) * 3;
     if (rng.chance(0.35)) {
@@ -91,7 +91,7 @@ export function createShrine(): ShrineResult {
   g.add(lintel);
 
   const orbMat = new THREE.MeshBasicMaterial({ color: "#7a7a7a" });
-  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.4, 10, 8), orbMat);
+  const orb = new THREE.Mesh(new THREE.SphereGeometry(0.4, 16, 12), orbMat);
   orb.position.y = 1.6;
   g.add(orb);
 

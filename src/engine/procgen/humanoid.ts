@@ -55,13 +55,13 @@ export function createHumanoid(colors: HumanoidColors, scale = 1): HumanoidParts
   hips.castShadow = true;
   group.add(hips);
 
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.21, 10, 8), lambert(colors.skin));
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.21, 16, 12), lambert(colors.skin));
   head.position.y = 1.45;
   head.castShadow = true;
   group.add(head);
 
   const hair = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 10, 6, 0, Math.PI * 2, 0, Math.PI * 0.55),
+    new THREE.SphereGeometry(0.22, 16, 9, 0, Math.PI * 2, 0, Math.PI * 0.55),
     lambert(colors.hair),
   );
   hair.position.y = 1.49;

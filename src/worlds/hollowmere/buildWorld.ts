@@ -33,7 +33,7 @@ export function buildVillage(
 
   const ground = createGroundPatch({
     size: 130,
-    segments: 80,
+    segments: 150,
     seed,
     amplitude: 0.7,
     colorA: GRASS_LOW,

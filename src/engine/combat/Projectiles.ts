@@ -39,7 +39,7 @@ export interface HitTarget {
 /** Linear projectiles with sphere visuals and radius hit-tests. */
 export class Projectiles {
   private readonly pool: Projectile[] = [];
-  private readonly geo = new THREE.SphereGeometry(0.12, 6, 5);
+  private readonly geo = new THREE.SphereGeometry(0.12, 9, 7);
 
   constructor(private readonly scene: THREE.Scene) {}
 

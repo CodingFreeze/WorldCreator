@@ -17,6 +17,7 @@ import { PlayerCombat } from "@engine/combat/PlayerCombat";
 import { Projectiles } from "@engine/combat/Projectiles";
 import { DialoguePanel } from "@engine/ui/DialoguePanel";
 import { Hud } from "@engine/ui/Hud";
+import { installWorldChrome } from "@engine/ui/WorldChrome";
 import { QuestLog } from "@engine/quest/QuestLog";
 import { SaveSystem, type SaveData } from "@engine/save/SaveSystem";
 import { buildVillage, updateWindows } from "./buildWorld";
@@ -107,6 +108,7 @@ export async function bootHollowmere(container: HTMLElement): Promise<import("@e
     addCoins: (n) => {
       coins += n;
       hud.setCoins(coins);
+      chrome.sfx.play("success");
     },
     toast: (msg) => hud.toast(msg),
     closeDialogue: () => dialogue.hide(),
@@ -142,8 +144,13 @@ export async function bootHollowmere(container: HTMLElement): Promise<import("@e
   let autosaveTimer = 30;
 
   const input = new ActionMap(BINDINGS);
-  const unbindInput = bindDomInput(input, canvas);
   const tpCamera = new ThirdPersonCamera(camera);
+  const chrome = installWorldChrome(container, renderer, tpCamera, 1.1);
+  const unbindInput = bindDomInput(
+    input,
+    canvas,
+    () => !dialogue.visible && !chrome.menu.visible,
+  );
 
   const emit = (type: Parameters<WorldEventBus["emit"]>[0]["type"], x: number, z: number, targetId?: string) =>
     bus.emit({ type, actor: "player", x, z, timeHours: clock.totalHoursElapsed, targetId });
@@ -152,10 +159,12 @@ export async function bootHollowmere(container: HTMLElement): Promise<import("@e
     input, combat, avatar, enemies, npcs, projectiles, bursts, playerHealth, hud,
     dialogueVisible: () => dialogue.visible,
     emit,
+    sfx: chrome.sfx,
   };
 
   const loop = new FixedStepLoop({
     fixedUpdate: (step) => {
+      if (chrome.menu.visible) return; // paused in settings
       const fwd = tpCamera.forwardDir();
       const move = { x: 0, z: 0 };
       if (input.isDown("forward")) { move.x += fwd.x; move.z += fwd.z; }
@@ -189,6 +198,7 @@ export async function bootHollowmere(container: HTMLElement): Promise<import("@e
       if (input.consumePressed("interact")) {
         if (tryCollectMoss(questServices, playerPos)) {
           moss.visible = false;
+          chrome.sfx.play("pickup");
         } else {
           const nearby = npcs.nearestTo(playerPos);
           if (nearby) {
@@ -269,6 +279,7 @@ export async function bootHollowmere(container: HTMLElement): Promise<import("@e
       loop.stop();
       unbindInput();
       unbindResize();
+      chrome.dispose();
       renderer.dispose();
       container.replaceChildren();
     },
