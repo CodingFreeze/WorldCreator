@@ -40,6 +40,9 @@ export const WORLDS: WorldEntry[] = [
     tagline: "A sunny island, three lost relics, and a shrine above the clouds.",
     accent: "#2a8ab8",
     poster: windwardPoster,
-    load: null, // lands in P7
+    load: async () => {
+      const m = await import("@worlds/windward/main");
+      return { boot: m.bootWindward };
+    },
   },
 ];

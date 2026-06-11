@@ -29,6 +29,12 @@ export class PhysicsWorld {
     this.world.step();
   }
 
+  /** Static triangle-mesh collider from render geometry (terrain). */
+  addFixedTrimesh(vertices: Float32Array, indices: Uint32Array): RAPIER.Collider {
+    const body = this.world.createRigidBody(RAPIER.RigidBodyDesc.fixed());
+    return this.world.createCollider(RAPIER.ColliderDesc.trimesh(vertices, indices), body);
+  }
+
   /** Remove a static collider and its body (doors, destroyed props). */
   removeCollider(collider: RAPIER.Collider): void {
     const body = collider.parent();
