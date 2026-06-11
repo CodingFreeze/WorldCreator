@@ -44,14 +44,14 @@ export const WORLD_SEED = 1031;
 const SPAWN = { x: 4, y: 1.5, z: 6 };
 
 /** Boot Hollowmere: village, villagers with opinions, combat in the woods. */
-export async function bootHollowmere(container: HTMLElement): Promise<void> {
+export async function bootHollowmere(container: HTMLElement): Promise<import("@engine/core/World").WorldHandle> {
   const canvas = document.createElement("canvas");
   container.appendChild(canvas);
 
   const renderer = createRenderer(canvas);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 400);
-  bindResize(renderer, camera);
+  const unbindResize = bindResize(renderer, camera);
 
   const saves = new SaveSystem();
   const saved = new URLSearchParams(location.search).has("fresh")
@@ -144,7 +144,7 @@ export async function bootHollowmere(container: HTMLElement): Promise<void> {
   let autosaveTimer = 30;
 
   const input = new ActionMap(BINDINGS);
-  bindDomInput(input, canvas);
+  const unbindInput = bindDomInput(input, canvas);
   const tpCamera = new ThirdPersonCamera(camera);
 
   const emit = (type: Parameters<WorldEventBus["emit"]>[0]["type"], x: number, z: number, targetId?: string) =>
@@ -362,4 +362,15 @@ export async function bootHollowmere(container: HTMLElement): Promise<void> {
       },
     };
   }
+
+  return {
+    dispose: () => {
+      saves.save(buildSave()); // never lose progress on exit
+      loop.stop();
+      unbindInput();
+      unbindResize();
+      renderer.dispose();
+      container.replaceChildren();
+    },
+  };
 }

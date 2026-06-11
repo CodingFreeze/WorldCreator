@@ -1,7 +1,12 @@
-import { bootHollowmere } from "@worlds/hollowmere/main";
+import { bootHub } from "@hub/main";
 
 const app = document.getElementById("app");
 if (!app) throw new Error("#app not found");
-bootHollowmere(app).catch((err) => {
-  console.error("boot failed", err);
-});
+
+// Direct world boot for development: ?world=hollowmere
+const direct = new URLSearchParams(location.search).get("world");
+if (direct === "hollowmere") {
+  void import("@worlds/hollowmere/main").then(({ bootHollowmere }) => bootHollowmere(app));
+} else {
+  bootHub(app);
+}
