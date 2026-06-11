@@ -4,6 +4,8 @@ export type Vec3 = { x: number; y: number; z: number };
 
 let rapierReady: Promise<void> | null = null;
 function initRapier(): Promise<void> {
+  // RAPIER.init() logs a deprecation warning in 0.19 but the typed API
+  // accepts no arguments; harmless, revisit on next rapier upgrade.
   rapierReady ??= RAPIER.init().then(() => undefined);
   return rapierReady;
 }
