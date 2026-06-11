@@ -19,6 +19,8 @@ export class PhysicsWorld {
     return new PhysicsWorld(new RAPIER.World({ x: 0, y: -9.81, z: 0 }));
   }
 
+  private readonly RAPIER = RAPIER;
+
   private constructor(readonly world: RAPIER.World) {
     this.world.timestep = PhysicsWorld.STEP;
   }
@@ -70,6 +72,31 @@ export class PhysicsWorld {
       body,
     );
     return { body, collider };
+  }
+
+  /**
+   * Occlusion test at chest height for witness checks. excludeCollider lets
+   * callers ignore the actor's own capsule.
+   */
+  hasLineOfSight(from: Vec3, to: Vec3, excludeCollider?: RAPIER.Collider): boolean {
+    const origin = { x: from.x, y: 1.2, z: from.z };
+    const dx = to.x - from.x;
+    const dz = to.z - from.z;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 0.01) return true;
+    const dir = { x: dx / dist, y: 0, z: dz / dist };
+    const ray = new this.RAPIER.Ray(origin, dir);
+    const hit = this.world.castRay(
+      ray,
+      dist - 0.3,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      excludeCollider ? (c) => c !== excludeCollider : undefined,
+    );
+    return hit === null;
   }
 
   createCharacterController(offset = 0.02): RAPIER.KinematicCharacterController {

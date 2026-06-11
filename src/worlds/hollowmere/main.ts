@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { GameClock } from "@engine/core/GameClock";
 import { FixedStepLoop } from "@engine/core/FixedStepLoop";
+import { Rng } from "@engine/core/Rng";
 import { ActionMap } from "@engine/input/ActionMap";
 import { bindDomInput } from "@engine/input/domBindings";
 import { createRenderer, bindResize } from "@engine/render/createRenderer";
@@ -9,8 +10,13 @@ import { PhysicsWorld } from "@engine/physics/PhysicsWorld";
 import { CharacterController } from "@engine/character/CharacterController";
 import { ThirdPersonCamera } from "@engine/character/ThirdPersonCamera";
 import { createHumanoid, animateHumanoid } from "@engine/procgen/humanoid";
+import { WorldEventBus } from "@engine/npc/events";
+import { DialoguePanel } from "@engine/ui/DialoguePanel";
+import { Hud } from "@engine/ui/Hud";
 import { buildVillage, updateWindows } from "./buildWorld";
 import { ChickenFlock } from "./chickens";
+import { defineRoster } from "./npcs";
+import { VillageNpcs } from "./npcRuntime";
 
 const BINDINGS = {
   forward: ["KeyW"],
@@ -19,11 +25,12 @@ const BINDINGS = {
   right: ["KeyD"],
   jump: ["Space"],
   interact: ["KeyE"],
+  mischief: ["KeyF"],
 } as const;
 
 export const WORLD_SEED = 1031;
 
-/** Boot Hollowmere: village, chickens, walkable player. */
+/** Boot Hollowmere: village, villagers with opinions, chickens, dialogue. */
 export async function bootHollowmere(container: HTMLElement): Promise<void> {
   const canvas = document.createElement("canvas");
   container.appendChild(canvas);
@@ -40,7 +47,6 @@ export async function bootHollowmere(container: HTMLElement): Promise<void> {
   const village = buildVillage(scene, physics, WORLD_SEED);
   const chickens = new ChickenFlock(scene, village.layout.chickenSpawns, WORLD_SEED ^ 0xc0c0);
 
-  // Player: humanoid spawned at the green's edge.
   const char = new CharacterController(physics, { x: 4, y: 1.5, z: 6 });
   const player = createHumanoid({
     skin: "#e8b890",
@@ -51,6 +57,12 @@ export async function bootHollowmere(container: HTMLElement): Promise<void> {
   scene.add(player.group);
   let walkPhase = 0;
   let facing = 0;
+
+  const bus = new WorldEventBus();
+  const npcs = new VillageNpcs(scene, defineRoster(village.layout), physics, bus, char.colliderRef);
+  const dialogue = new DialoguePanel(container);
+  const hud = new Hud(container);
+  const lineRng = new Rng(WORLD_SEED ^ 0xd1a);
 
   const input = new ActionMap(BINDINGS);
   bindDomInput(input, canvas);
@@ -72,21 +84,59 @@ export async function bootHollowmere(container: HTMLElement): Promise<void> {
       if (moving) {
         facing = Math.atan2(move.x, move.z);
         walkPhase += step * 9;
+        if (dialogue.visible) dialogue.hide(); // walking away ends the chat
       }
-      chickens.update(step, char.position);
+
+      const playerPos = char.position;
+      chickens.update(step, playerPos);
+      npcs.update(step, clock.hour, clock.totalHoursElapsed, playerPos);
+
+      // E: talk to the nearest villager.
+      if (input.consumePressed("interact")) {
+        const nearby = npcs.nearestTo(playerPos);
+        if (nearby) {
+          dialogue.show(
+            `${nearby.def.name} — ${nearby.def.role}`,
+            npcs.greetingFor(nearby, lineRng),
+          );
+        } else if (dialogue.visible) {
+          dialogue.hide();
+        }
+      }
+
+      // F: kick a chicken. The village remembers.
+      if (input.consumePressed("mischief")) {
+        const kicked = chickens.kickNearest(playerPos);
+        if (kicked) {
+          bus.emit({
+            type: "kicked_chicken",
+            actor: "player",
+            x: kicked.x,
+            z: kicked.z,
+            timeHours: clock.totalHoursElapsed,
+          });
+          hud.toast("The chicken will remember that. So will the village.");
+        }
+      }
     },
     render: (_alpha, dt) => {
       const d = input.drainMouseDelta();
       tpCamera.addLook(d.x, d.y);
       const p = char.position;
-      // Capsule center -> feet: capsule half height + radius.
       player.group.position.set(p.x, p.y - 0.85, p.z);
       player.group.rotation.y = facing;
-      const moving = input.isDown("forward") || input.isDown("back") || input.isDown("left") || input.isDown("right");
+      const moving =
+        input.isDown("forward") || input.isDown("back") || input.isDown("left") || input.isDown("right");
       animateHumanoid(player, moving ? walkPhase : walkPhase + dt, moving ? 1 : 0);
       tpCamera.update(p);
       rig.update(clock, player.group.position);
       updateWindows(village.windows, clock.daylight01);
+
+      const nearby = npcs.nearestTo(p);
+      hud.setPrompt(
+        dialogue.visible ? null : nearby ? `E — talk to ${nearby.def.name}` : null,
+      );
+
       renderer.render(scene, camera);
     },
   });

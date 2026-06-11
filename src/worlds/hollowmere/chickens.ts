@@ -43,6 +43,29 @@ export class ChickenFlock {
     }
   }
 
+  /**
+   * Boot the nearest chicken within reach: it bolts, you answer to the
+   * village. Returns the chicken's position or null if none in range.
+   */
+  kickNearest(playerPos: Vec3, maxDist = 1.7): { x: number; z: number } | null {
+    let best: ChickenState | null = null;
+    let bestDist = maxDist;
+    for (const c of this.chickens) {
+      const p = c.parts.group.position;
+      const d = Math.hypot(p.x - playerPos.x, p.z - playerPos.z);
+      if (d < bestDist) {
+        best = c;
+        bestDist = d;
+      }
+    }
+    if (!best) return null;
+    const p = best.parts.group.position;
+    best.mode = "flee";
+    best.dir = Math.atan2(p.x - playerPos.x, p.z - playerPos.z);
+    best.timer = 2.2;
+    return { x: p.x, z: p.z };
+  }
+
   update(dt: number, playerPos: Vec3): void {
     for (const c of this.chickens) {
       const p = c.parts.group.position;

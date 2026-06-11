@@ -21,6 +21,11 @@ export class GameClock {
     this.totalHours += (realDtSec / this.dayLengthSec) * 24;
   }
 
+  /** Total in-game hours since day 0 — event timestamps, cooldowns. */
+  get totalHoursElapsed(): number {
+    return this.totalHours;
+  }
+
   /** Hour of day [0,24). */
   get hour(): number {
     return ((this.totalHours % 24) + 24) % 24;

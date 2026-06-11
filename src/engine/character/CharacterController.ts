@@ -81,4 +81,9 @@ export class CharacterController {
   get position(): Vec3 {
     return this.body.translation();
   }
+
+  /** For raycast exclusion (witness LOS must not hit the player capsule). */
+  get colliderRef(): RAPIER.Collider {
+    return this.collider;
+  }
 }
