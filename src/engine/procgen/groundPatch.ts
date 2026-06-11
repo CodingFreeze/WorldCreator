@@ -14,6 +14,10 @@ export interface GroundPatchOptions {
   amplitude: number;
   colorA: THREE.Color; // low
   colorB: THREE.Color; // high
+  /** Per-vertex amplitude multiplier (e.g. flatten village center). */
+  heightScale?: (x: number, z: number) => number;
+  /** Override vertex color (paths, plazas). Return null to keep default. */
+  paint?: (x: number, z: number) => THREE.Color | null;
 }
 
 /** Flat-shaded, vertex-colored, gently rolling ground plane. */
@@ -30,8 +34,14 @@ export function createGroundPatch(opts: GroundPatchOptions): THREE.Mesh {
     const n =
       hashNoise2D(Math.floor(x / 4), Math.floor(z / 4), opts.seed) * 0.6 +
       hashNoise2D(Math.floor(x / 16), Math.floor(z / 16), opts.seed + 1) * 0.4;
-    pos.setY(i, n * opts.amplitude);
-    c.lerpColors(opts.colorA, opts.colorB, n);
+    const scale = opts.heightScale ? opts.heightScale(x, z) : 1;
+    pos.setY(i, n * opts.amplitude * scale);
+    const painted = opts.paint ? opts.paint(x, z) : null;
+    if (painted) {
+      c.copy(painted);
+    } else {
+      c.lerpColors(opts.colorA, opts.colorB, n);
+    }
     colors[i * 3] = c.r;
     colors[i * 3 + 1] = c.g;
     colors[i * 3 + 2] = c.b;

@@ -1,0 +1,94 @@
+import * as THREE from "three";
+import { GameClock } from "@engine/core/GameClock";
+import { FixedStepLoop } from "@engine/core/FixedStepLoop";
+import { ActionMap } from "@engine/input/ActionMap";
+import { bindDomInput } from "@engine/input/domBindings";
+import { createRenderer, bindResize } from "@engine/render/createRenderer";
+import { GoldenHourRig } from "@engine/render/GoldenHourRig";
+import { PhysicsWorld } from "@engine/physics/PhysicsWorld";
+import { CharacterController } from "@engine/character/CharacterController";
+import { ThirdPersonCamera } from "@engine/character/ThirdPersonCamera";
+import { createHumanoid, animateHumanoid } from "@engine/procgen/humanoid";
+import { buildVillage, updateWindows } from "./buildWorld";
+import { ChickenFlock } from "./chickens";
+
+const BINDINGS = {
+  forward: ["KeyW"],
+  back: ["KeyS"],
+  left: ["KeyA"],
+  right: ["KeyD"],
+  jump: ["Space"],
+  interact: ["KeyE"],
+} as const;
+
+export const WORLD_SEED = 1031;
+
+/** Boot Hollowmere: village, chickens, walkable player. */
+export async function bootHollowmere(container: HTMLElement): Promise<void> {
+  const canvas = document.createElement("canvas");
+  container.appendChild(canvas);
+
+  const renderer = createRenderer(canvas);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 400);
+  bindResize(renderer, camera);
+
+  const clock = new GameClock({ dayLengthSec: 480, startHour: 10 });
+  const rig = new GoldenHourRig(scene);
+
+  const physics = await PhysicsWorld.create();
+  const village = buildVillage(scene, physics, WORLD_SEED);
+  const chickens = new ChickenFlock(scene, village.layout.chickenSpawns, WORLD_SEED ^ 0xc0c0);
+
+  // Player: humanoid spawned at the green's edge.
+  const char = new CharacterController(physics, { x: 4, y: 1.5, z: 6 });
+  const player = createHumanoid({
+    skin: "#e8b890",
+    shirt: "#7a4a2a",
+    pants: "#4a3a2a",
+    hair: "#3a2a1a",
+  });
+  scene.add(player.group);
+  let walkPhase = 0;
+  let facing = 0;
+
+  const input = new ActionMap(BINDINGS);
+  bindDomInput(input, canvas);
+  const tpCamera = new ThirdPersonCamera(camera);
+
+  const loop = new FixedStepLoop({
+    fixedUpdate: (step) => {
+      const fwd = tpCamera.forwardDir();
+      const move = { x: 0, z: 0 };
+      if (input.isDown("forward")) { move.x += fwd.x; move.z += fwd.z; }
+      if (input.isDown("back")) { move.x -= fwd.x; move.z -= fwd.z; }
+      if (input.isDown("left")) { move.x += fwd.z; move.z -= fwd.x; }
+      if (input.isDown("right")) { move.x -= fwd.z; move.z += fwd.x; }
+      char.update(move, input.consumePressed("jump"), step);
+      physics.step();
+      clock.advance(step);
+
+      const moving = move.x !== 0 || move.z !== 0;
+      if (moving) {
+        facing = Math.atan2(move.x, move.z);
+        walkPhase += step * 9;
+      }
+      chickens.update(step, char.position);
+    },
+    render: (_alpha, dt) => {
+      const d = input.drainMouseDelta();
+      tpCamera.addLook(d.x, d.y);
+      const p = char.position;
+      // Capsule center -> feet: capsule half height + radius.
+      player.group.position.set(p.x, p.y - 0.85, p.z);
+      player.group.rotation.y = facing;
+      const moving = input.isDown("forward") || input.isDown("back") || input.isDown("left") || input.isDown("right");
+      animateHumanoid(player, moving ? walkPhase : walkPhase + dt, moving ? 1 : 0);
+      tpCamera.update(p);
+      rig.update(clock, player.group.position);
+      updateWindows(village.windows, clock.daylight01);
+      renderer.render(scene, camera);
+    },
+  });
+  loop.start();
+}

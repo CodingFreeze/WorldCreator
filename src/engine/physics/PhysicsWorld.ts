@@ -27,11 +27,13 @@ export class PhysicsWorld {
     this.world.step();
   }
 
-  /** Static box collider; halfExtents are half side lengths. */
-  addFixedCuboid(pos: Vec3, halfExtents: Vec3): RAPIER.Collider {
-    const body = this.world.createRigidBody(
-      RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z),
-    );
+  /** Static box collider; halfExtents are half side lengths. Optional yaw. */
+  addFixedCuboid(pos: Vec3, halfExtents: Vec3, yRot = 0): RAPIER.Collider {
+    const desc = RAPIER.RigidBodyDesc.fixed().setTranslation(pos.x, pos.y, pos.z);
+    if (yRot !== 0) {
+      desc.setRotation({ x: 0, y: Math.sin(yRot / 2), z: 0, w: Math.cos(yRot / 2) });
+    }
+    const body = this.world.createRigidBody(desc);
     return this.world.createCollider(
       RAPIER.ColliderDesc.cuboid(halfExtents.x, halfExtents.y, halfExtents.z),
       body,
