@@ -11,9 +11,10 @@ import { DialoguePanel } from "@engine/ui/DialoguePanel";
 import { Hud } from "@engine/ui/Hud";
 import type { WorldHandle } from "@engine/core/World";
 import { generateMarketLayout } from "./layout";
-import { buildMarket } from "./build";
+import { buildMarket, createVendorBot } from "./build";
 import { RainSystem, SteamColumns } from "./effects";
 import { DroneCore, droneSees, WAYPOINT_ARRIVE_DIST } from "./drone";
+import { installMarketDevHooks } from "./devHooks";
 
 const BINDINGS = {
   forward: ["KeyW"], back: ["KeyS"], left: ["KeyA"], right: ["KeyD"],
@@ -63,25 +64,7 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
   let facing = 0;
 
   // Vendor robot.
-  const vendor = new THREE.Group();
-  const vBody = new THREE.Mesh(
-    new THREE.BoxGeometry(0.7, 0.9, 0.5),
-    new THREE.MeshLambertMaterial({ color: "#3a4a5a", flatShading: true }),
-  );
-  vBody.position.y = 0.9;
-  const vHead = new THREE.Mesh(
-    new THREE.BoxGeometry(0.5, 0.4, 0.45),
-    new THREE.MeshLambertMaterial({ color: "#4a5a6a", flatShading: true }),
-  );
-  vHead.position.y = 1.55;
-  const eyeMat = new THREE.MeshBasicMaterial({ color: "#2affd8" });
-  eyeMat.toneMapped = false;
-  for (const ex of [-0.12, 0.12]) {
-    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.02), eyeMat);
-    eye.position.set(ex, 1.58, 0.24);
-    vendor.add(eye);
-  }
-  vendor.add(vBody, vHead);
+  const vendor = createVendorBot();
   vendor.position.set(market.vendorPos.x, 0, market.vendorPos.z);
   scene.add(vendor);
   let vendorLine = 0;
@@ -290,24 +273,17 @@ export async function bootNightMarket(container: HTMLElement): Promise<WorldHand
   });
   loop.start();
 
-  if (new URLSearchParams(location.search).has("dev")) {
-    (window as unknown as Record<string, unknown>).__wcMarket = {
-      teleport: (x: number, z: number) => char.setPosition({ x, y: 1.5, z }),
-      playerPos: () => char.position,
-      credits: () => credits,
-      hacked: () => [...hacked],
-      droneMode: () => droneCore.mode,
-      doorOpen: () => doorOpen,
-      chips: () =>
-        chips.filter((c) => !c.taken).map((c) => ({ x: c.mesh.position.x, z: c.mesh.position.z })),
-      stashPos: () => market.stashPos,
-      terminals: () => layout.terminals,
-      pressKey: (code: string) => {
-        window.dispatchEvent(new KeyboardEvent("keydown", { code }));
-        window.dispatchEvent(new KeyboardEvent("keyup", { code }));
-      },
-    };
-  }
+  installMarketDevHooks({
+    char,
+    layout,
+    credits: () => credits,
+    hacked: () => [...hacked],
+    droneMode: () => droneCore.mode,
+    doorOpen: () => doorOpen,
+    chips: () =>
+      chips.filter((c) => !c.taken).map((c) => ({ x: c.mesh.position.x, z: c.mesh.position.z })),
+    stashPos: () => market.stashPos,
+  });
 
   return {
     dispose: () => {

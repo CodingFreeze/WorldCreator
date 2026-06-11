@@ -60,6 +60,30 @@ export interface BuiltMarket {
   stashPos: { x: number; z: number };
 }
 
+/** NOODLE-9000: boxy vendor robot with unblinking cyan eyes. */
+export function createVendorBot(): THREE.Group {
+  const vendor = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(0.7, 0.9, 0.5),
+    new THREE.MeshLambertMaterial({ color: "#3a4a5a", flatShading: true }),
+  );
+  body.position.y = 0.9;
+  const head = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.4, 0.45),
+    new THREE.MeshLambertMaterial({ color: "#4a5a6a", flatShading: true }),
+  );
+  head.position.y = 1.55;
+  const eyeMat = new THREE.MeshBasicMaterial({ color: "#2affd8" });
+  eyeMat.toneMapped = false;
+  for (const ex of [-0.12, 0.12]) {
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.02), eyeMat);
+    eye.position.set(ex, 1.58, 0.24);
+    vendor.add(eye);
+  }
+  vendor.add(body, head);
+  return vendor;
+}
+
 const ASPHALT_LOW = new THREE.Color(0x14141c);
 const ASPHALT_HIGH = new THREE.Color(0x1e1e2a);
 const PUDDLE = new THREE.Color(0x2a3550);

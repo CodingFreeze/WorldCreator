@@ -1,5 +1,8 @@
 # WorldCreator — World Roster
 
+> Status 2026-06-11: #1 Hollowmere SHIPPED (M1), #2 Neon Night Market SHIPPED
+> (as "Neon Night Market"), #3 Windward Isle SHIPPED. #4/#5 remain candidates.
+
 Candidate worlds for the gallery. Each is original content; the named games are
 feel-references only — no IP is copied.
 
