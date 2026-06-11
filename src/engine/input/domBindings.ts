@@ -18,9 +18,12 @@ export function bindDomInput(map: ActionMap, canvas: HTMLCanvasElement): () => v
     }
   };
 
+  const onContextMenu = (e: Event) => e.preventDefault(); // right-click = aim, not menu
+
   window.addEventListener("keydown", onKeyDown);
   window.addEventListener("keyup", onKeyUp);
   canvas.addEventListener("mousedown", onMouseDown);
+  canvas.addEventListener("contextmenu", onContextMenu);
   window.addEventListener("mouseup", onMouseUp);
   window.addEventListener("mousemove", onMouseMove);
 
@@ -28,6 +31,7 @@ export function bindDomInput(map: ActionMap, canvas: HTMLCanvasElement): () => v
     window.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("keyup", onKeyUp);
     canvas.removeEventListener("mousedown", onMouseDown);
+    canvas.removeEventListener("contextmenu", onContextMenu);
     window.removeEventListener("mouseup", onMouseUp);
     window.removeEventListener("mousemove", onMouseMove);
   };

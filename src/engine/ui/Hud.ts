@@ -46,6 +46,35 @@ export class Hud {
     container.append(this.promptEl, this.toastEl);
   }
 
+  private barsEl: HTMLDivElement | null = null;
+  private healthFill: HTMLDivElement | null = null;
+  private flowFill: HTMLDivElement | null = null;
+
+  /** Health + flow bars, bottom-left. Call once; update via setBars. */
+  enableBars(): void {
+    if (this.barsEl) return;
+    this.barsEl = document.createElement("div");
+    this.barsEl.style.cssText =
+      "position:absolute;left:18px;bottom:16px;display:flex;flex-direction:column;gap:6px;z-index:9;pointer-events:none";
+    const mkBar = (color: string, w: number) => {
+      const outer = document.createElement("div");
+      outer.style.cssText = `width:${w}px;height:12px;background:rgba(24,18,12,0.7);border:1px solid #c9a25e;border-radius:6px;overflow:hidden`;
+      const fill = document.createElement("div");
+      fill.style.cssText = `width:100%;height:100%;background:${color};transition:width 0.15s`;
+      outer.appendChild(fill);
+      this.barsEl?.appendChild(outer);
+      return fill;
+    };
+    this.healthFill = mkBar("#c4452f", 180);
+    this.flowFill = mkBar("#4ac4e8", 120);
+    this.promptEl.parentElement?.appendChild(this.barsEl);
+  }
+
+  setBars(health01: number, flow01: number): void {
+    if (this.healthFill) this.healthFill.style.width = `${Math.max(0, health01) * 100}%`;
+    if (this.flowFill) this.flowFill.style.width = `${Math.max(0, flow01) * 100}%`;
+  }
+
   setPrompt(text: string | null): void {
     if (text) {
       this.promptEl.textContent = text;
