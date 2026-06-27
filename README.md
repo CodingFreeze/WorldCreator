@@ -1,5 +1,7 @@
 # WorldCreator
 
+> 🤖 **A Fable 5 experiment.** One of a handful of silly side projects I had **Fable 5** build before the model was banned. I wanted to see how good Fable really was at game design — so I handed it a concept (a multi-world 3D engine) and let it run. It's a fun prototype, not a finished product; if Fable ever comes back, or I find the free time, I may pick it up and finish it.
+
 A browser-based collection of small, fully procedural 3D worlds built on one
 shared Three.js + TypeScript engine. No external assets — every mesh, texture,
 and poster is generated in code.
